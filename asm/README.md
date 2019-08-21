@@ -1,4 +1,4 @@
-# LS-8 Assembler
+# LS-8 Assembler  
 
 This takes LS-8 assembler source and converts it into `.ls8` "binary"
 files.
