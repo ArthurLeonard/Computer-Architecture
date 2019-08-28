@@ -2,6 +2,24 @@
 
 import sys
 
+
+ADD = 10100000 
+SUB = 10100001 
+MUL = 10100010 
+DIV = 10100011 
+MOD = 10100100
+#INCC = 0110010
+#DEC = 01100110
+CMP = 10100111
+AND = 10101000
+#NOT = 01101001 
+OR  = 10101010
+XOR = 10101011
+SHL = 10101100
+SHR = 10101101
+
+print(ADD, SUB, MUL)
+
 class CPU:
     """Main CPU class."""
 
@@ -74,6 +92,44 @@ class CPU:
 
     def run(self):
         """Run the CPU."""
-        self.instruction_register = self.memory[program_counter]
-        operand_1 = self.memory[program_counter + 1]
-        operand_2 = self.memory[program_counter + 2]
+    # 0 - Have all this in a loop
+
+        # 1 - Have instructions loaded to memory
+
+        # 2 - call the proper instruction
+
+        self.instruction_register = self.ram_read(program_counter)
+        operand_1 = self.ram_read(program_counter + 1)
+        operand_2 = self.ram_read(program_counter + 2)
+
+        if self.instruction_register == ADD:
+            self.registers[operand_1] = self.registers[operand_1] + self.registers[operand_2]
+            
+        elif self.instruction_register == SUB:
+            self.registers[operand_1] = self.registers[operand_1] - self.registers[operand_2]
+            
+        elif self.instruction_register == MUL:
+            self.registers[operand_1] = self.registers[operand_1] * self.registers[operand_2]
+            
+        elif self.instruction_register == DIV:
+            self.registers[operand_1] = self.registers[operand_1] / self.registers[operand_2]
+            
+        elif self.instruction_register == MOD:
+            self.registers[operand_1] = self.registers[operand_1] % self.registers[operand_2]
+            
+        elif self.instruction_register == CMP:
+            pass
+        elif self.instruction_register == AND:
+            pass
+
+        elif self.instruction_register == OR:
+            pass
+
+        elif self.instruction_register == XOR:
+            pass
+
+        elif self.instruction_register == SHL: 
+            pass
+
+        elif self.instruction_register == SHR:
+            pass
