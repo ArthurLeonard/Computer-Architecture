@@ -2,35 +2,6 @@
 
 import sys
 
-
-ADD = 10100000 
-SUB = 10100001 
-MUL = 10100010 
-DIV = 10100011 
-MOD = 10100100
-CMP = 10100111
-AND = 10101000
-LDI = 10000010
-LD = 10000011
-OR  = 10101010
-XOR = 10101011
-SHL = 10101100
-SHR = 10101101
-ST = 10000100
-#NOP = 00000000
-#INC = 0110010
-#DEC = 01100110
-#PRN = 01000111
-#PRA = 01001000
-#N0T = 01101001
-# JMP = 01010100
-# JNE = 01010110
-# JLT = 01011000
-# JGT = 01010111
-# JGE = 01011010
-# JEQ = 01010101
-# HLT = 00000001
-
 ADD = '10100000' 
 SUB = '10100001' 
 MUL = '10100010' 
@@ -58,19 +29,23 @@ JGT = '01010111'
 JGE = '01011010'
 JEQ = '01010101'
 HLT = '00000001'
+PUSH = '01000101'
+POP  = '01000110'
+CALL = '01010000'
+RET  = '00010001'
 
 if len(sys.argv) != 2:
     print(f"usage: {sys.argv[0]} filename")
     sys.exit(1)
 try: 
-    initial_memory = [0] * 256
+    initial_memory = [-1] * 256
     counter = 0
     with open(sys.argv[1]) as f:
         for line in f:
             #print(line.split('#', 1))
             num = line.split('#', 1)[0]
             num = num.split('\n', 1)[0]
-            print(num, type(num))
+            #print(num, type(num))
             initial_memory[counter] = num
             counter += 1
 
@@ -94,7 +69,7 @@ class CPU:
         self.registers = [0] * 8
         self.program_counter = 0
         self.instruction_register = 0
-        self.stack_pointer = 0xF4
+        self.registers[7] = 0xF4
         #self.memory[0] = 10100000  # ADD
         self.flags = 11111000 # 00000LGE L = Less than , G = Greater than, E = Equal
 
@@ -106,7 +81,7 @@ class CPU:
     def ram_write(self, address, value):
         self.memory[address] = value
 
-
+    
     def load(self):
         """Load a program into memory."""
 
@@ -144,17 +119,17 @@ class CPU:
         from run() if you need help debugging.
         """
 
-        print(f"TRACE: %02X | %02X %02X %02X |" % (
-            self.pc,
+        print(f"TRACE: %s | %s %s %s |" % (
+            self.program_counter,
             #self.fl,
             #self.ie,
-            self.ram_read(self.pc),
-            self.ram_read(self.pc + 1),
-            self.ram_read(self.pc + 2)
+            self.ram_read(self.program_counter),
+            self.ram_read(self.program_counter + 1),
+            self.ram_read(self.program_counter + 2)
         ), end='')
 
         for i in range(8):
-            print(" %02X" % self.reg[i], end='')
+            print(" %s" % self.registers[i], end='')
 
         print()
 
@@ -163,24 +138,28 @@ class CPU:
         # for line in self.memory:
         #     print(line)
     # 0 - Have all this in a loop
+        SP = self.registers[7]
+        #print('Stack pointer is pointing to :', SP)
         running = True
 
+        #print("at memory[24] : ", self.memory[24])
         while(running):
             if type(self.ram_read(self.program_counter)) == int:
                 break
         # 1 - Have instructions loaded to memory
 
         # 2 - call the proper instruction
-
+            #self.trace()
             self.instruction_register = self.ram_read(self.program_counter)
-            print("Instruction: ", self.instruction_register, type(self.instruction_register), HLT, type(HLT))
+            #print("Instruction: ", self.instruction_register, type(self.instruction_register), HLT, type(HLT))
             if int(self.instruction_register, 2) == int(HLT, 2):
-                print("In halt, PC =  ", self.program_counter)
+                #print("In halt, PC =  ", self.program_counter)
                 return 0
-                
-            operand_1 = int(self.ram_read(self.program_counter + 1), 2)
-            operand_2 = int(self.ram_read(self.program_counter + 2), 2)
-            print("operand_1 : ", operand_1, type(operand_1), self.program_counter)
+            if self.ram_read(self.program_counter + 1) != -1:
+                operand_1 = int(self.ram_read(self.program_counter + 1), 2)
+            if self.ram_read(self.program_counter + 2) != -1:
+                operand_2 = int(self.ram_read(self.program_counter + 2), 2)
+            #print("operand_1 : ", operand_1, type(operand_1), self.program_counter)
             
             val1 = self.registers[operand_1]
             if operand_2 < 8:
@@ -243,7 +222,7 @@ class CPU:
                 self.memory[val1] = val2
 
             elif int(self.instruction_register, 2) == int(PRN, 2):
-                print("in print value")
+                #print("in print value")
                 print(val1)
 
             elif int(self.instruction_register, 2) == int(PRA, 2):
@@ -297,7 +276,28 @@ class CPU:
                     self.program_counter = val1
                     continue
 
-            
+            elif int(self.instruction_register, 2) == int(PUSH, 2):
+                self.registers[7] -= 1
+                self.memory[self.registers[7]] = val1
+
+            elif int(self.instruction_register, 2) == int(POP, 2):
+                self.registers[operand_1] = self.memory[self.registers[7]]
+                self.registers[7] += 1
+
+            elif int(self.instruction_register, 2) == int(CALL, 2):
+                # the adress of the instruction directly after CALL is pushed on the stack
+                self.registers[7] -= 1
+                self.memory[self.registers[7]] = self.program_counter + 2
+                # The PC is set to the address stored in the given register
+                self.program_counter = self.registers[operand_1] 
+                continue
+
+            elif int(self.instruction_register, 2) == int(RET, 2):
+                self.program_counter = self.memory[self.registers[7]]
+                self.registers[7] += 1
+                continue
+
+
 
             num_of_operands = int(str(self.instruction_register), 2) >> 6
 
