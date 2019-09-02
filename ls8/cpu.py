@@ -43,11 +43,14 @@ try:
     with open(sys.argv[1]) as f:
         for line in f:
             #print(line.split('#', 1))
+            #print(line.split('#', 1)[0])
+
             num = line.split('#', 1)[0]
             num = num.split('\n', 1)[0]
             #print(num, type(num))
-            initial_memory[counter] = num
-            counter += 1
+            if num != '':
+                initial_memory[counter] = num
+                counter += 1
 
 
 except FileNotFoundError:
